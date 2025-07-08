@@ -16,8 +16,10 @@ app.use(cors({
 app.use(express.json());
 
 const userRouter = require("./route/user_route");
+const adminRouter = require("./route/auth_route");
 
 app.use("/api/user", userRouter);
+app.use("/api/auth", adminRouter);
 
 app.use("/user-images", express.static(path.join(__dirname, "user-images")));
 

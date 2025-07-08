@@ -1,7 +1,5 @@
 const User = require("../model/user");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const SECRET_KEY = process.env.SECRET_KEY;
 const nodemailer = require("nodemailer");
 
 const findAll = async (req, res) => {
