@@ -47,14 +47,14 @@ const findById = async (req, res) => {
         const user = await User.findById(req.user.id);
 
         if (!user) {
-            return res.status(404).json({ message: "Event explorer not found" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         const BASE_URL = "http://localhost:3000";
 
         const profilePicture = user.profilePicture
-            ? `${BASE_URL}/event-explorer-images/${user.profilePicture}`
-            : `${BASE_URL}/event-explorer-images/default_profile_img.png`;
+            ? `${BASE_URL}/user-images/${user.profilePicture}`
+            : `${BASE_URL}/user-images/default_profile_img.png`;
 
         res.status(200).json({ ...user._doc, profilePicture: profilePicture });
     } catch (e) {
@@ -103,7 +103,7 @@ const updateProfilePicture = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
-            return res.status(404).json({ message: "Event explorer not found" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         user.profilePicture = req.file.filename;
@@ -168,7 +168,7 @@ const verifyOtp = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(404).json({ message: "Event explorer not found" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         if (user.otp !== otp) {

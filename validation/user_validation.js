@@ -21,7 +21,7 @@ function userValidation(req, res, next) {
     const {error} = userSchema.validate({fullName, mobileNumber, address, city, email, password})
 
     if(error) {
-        return res.json(error)
+        return res.status(400).json({ message: error.details[0].message });
     }
     next()
 }

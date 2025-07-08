@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { findAll, save, findById, deleteById, update, updateProfilePicture } = require("../controller/user_controller");
-const eventExplorerValidation = require("../validation/user_validation");
+const userValidation = require("../validation/user_validation");
 const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
 
@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 router.get("/", authenticateToken, authorizeRole("admin"), findAll);
-router.post("/", eventExplorerValidation, save);
+router.post("/", userValidation, save);
 router.get("/:id", authenticateToken, authorizeRole("user", "admin"), findById);
 router.delete("/:id", authenticateToken, authorizeRole("user"), deleteById);
 router.put("/:id", authenticateToken, authorizeRole("user"), update);

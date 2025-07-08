@@ -17,7 +17,7 @@ function adminValidation(req, res, next) {
     const {error} = adminSchema.validate({email, password})
 
     if(error) {
-        return res.json(error)
+        return res.status(400).json({ message: error.details[0].message });
     }
     next()
 }
