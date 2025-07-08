@@ -137,7 +137,7 @@ const sendOtp = async (req, res) => {
             protocol: "smtp",
             auth: {
                 user: "webinara2025@gmail.com",
-                // pass: "ejjpleiswwikbvmz"
+                pass: "afevnezwbcnoshdf"
             }
         })
 

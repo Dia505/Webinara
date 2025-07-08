@@ -19,11 +19,13 @@ const userRouter = require("./route/user_route");
 const adminRouter = require("./route/auth_route");
 const hostRouter = require("./route/host_route");
 const webinarRouter = require("./route/webinar_route");
+const bookingRouter = require("./route/booking_route");
 
 app.use("/api/user", userRouter);
 app.use("/api/auth", adminRouter);
 app.use("/api/host", hostRouter);
 app.use("/api/webinar", webinarRouter);
+app.use("/api/booking", bookingRouter);
 
 app.use("/user-images", express.static(path.join(__dirname, "user-images")));
 app.use("/host-images", express.static(path.join(__dirname, "host-images")));
