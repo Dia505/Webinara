@@ -136,8 +136,8 @@ const sendOtp = async (req, res) => {
             secure: false,
             protocol: "smtp",
             auth: {
-                user: "webinara2025@gmail.com",
-                pass: "afevnezwbcnoshdf"
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
             }
         })
 
