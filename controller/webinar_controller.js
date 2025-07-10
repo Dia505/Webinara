@@ -29,7 +29,7 @@ const save = async (req, res) => {
 
 const findById = async (req, res) => {
     try {
-        const webinar = await Webinar.findById(req.webinar.id).populate("hostId");
+        const webinar = await Webinar.findById(req.params.id).populate("hostId");
 
         if (!webinar) {
             return res.status(404).json({ message: "Webinar not found" });
@@ -50,16 +50,16 @@ const findById = async (req, res) => {
     }
 };
 
-const findByHostId = async (req, res) => {
-    try {
-        const { hostId } = req.params;
-        const webinar = await Webinar.find({ hostId }).populate("hostId");
-        res.status(200).json(webinar);
-    }
-    catch (e) {
-        res.json(e)
-    }
-}
+// const findByHostId = async (req, res) => {
+//     try {
+//         const { hostId } = req.params;
+//         const webinar = await Webinar.find({ hostId }).populate("hostId");
+//         res.status(200).json(webinar);
+//     }
+//     catch (e) {
+//         res.json(e)
+//     }
+// }
 
 const deleteById = async (req, res) => {
     try {
@@ -206,14 +206,65 @@ const filterWebinar = async (req, res) => {
     }
 };
 
+const getHomeWebinars = async (req, res) => {
+    try {
+        const now = new Date();
+
+        const webinars = await Webinar.aggregate([
+            { $match: { date: { $gte: now } } },
+            { $sample: { size: 6 } }
+        ]);
+
+        const BASE_URL = "http://localhost:3000";
+
+        const processedWebinars = webinars.map(w => ({
+            ...w,
+            webinarPhoto: w.webinarPhoto
+                ? `${BASE_URL}/webinar-images/${w.webinarPhoto}`
+                : null
+        }));
+
+        res.status(200).json(processedWebinars);
+    } catch (e) {
+        res.status(500).json({ message: "Error fetching home webinars", error: e.message });
+    }
+};
+
+const checkBookingFull = async (req, res) => {
+    try {
+        const webinar = await Webinar.findById(req.params.id);
+
+        if (!webinar) {
+            return res.status(404).json({ message: "Webinar not found" });
+        }
+
+        if (webinar.totalSeats === null) {
+            return res.status(200).json({ full: false, message: "Unlimited seats" });
+        }
+
+        const isFull = webinar.bookedSeats >= webinar.totalSeats;
+
+        return res.status(200).json({
+            full: isFull,
+            availableSeats: webinar.totalSeats - webinar.bookedSeats
+        });
+
+    } catch (error) {
+        console.error("Error checking booking status:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
 module.exports = {
     findAll,
     save,
     findById,
-    findByHostId,
+    // findByHostId,
     deleteById,
     update,
     updateWebinarPhoto,
     searchWebinar,
-    filterWebinar
+    filterWebinar,
+    getHomeWebinars,
+    checkBookingFull
 }
