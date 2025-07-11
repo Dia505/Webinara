@@ -141,7 +141,16 @@ const searchWebinar = async (req, res) => {
 
         const finalResults = [...new Set([...webinars, ...filtered])];
 
-        res.status(200).json(finalResults);
+        const BASE_URL = "http://localhost:3000";
+
+        const processedWebinars = finalResults.map(w => ({
+            ...w,
+            webinarPhoto: w.webinarPhoto
+                ? `${BASE_URL}/webinar-images/${w.webinarPhoto}`
+                : null
+        }));
+
+        res.status(200).json(processedWebinars);
     } catch (e) {
         console.error("Search failed:", e);
         res.status(500).json({ message: "Search failed", error: e.message });
@@ -199,7 +208,17 @@ const filterWebinar = async (req, res) => {
         }
 
         const webinars = await Webinar.find(filter).sort({ date: 1 });
-        res.status(200).json(webinars);
+
+        const BASE_URL = "http://localhost:3000";
+
+        const processedWebinars = webinars.map(w => ({
+            ...w,
+            webinarPhoto: w.webinarPhoto
+                ? `${BASE_URL}/webinar-images/${w.webinarPhoto}`
+                : null
+        }));
+
+        res.status(200).json(processedWebinars);
     } catch (err) {
         console.error("Error filtering webinars:", err);
         res.status(500).json({ message: "Error filtering webinars", error: err.message });

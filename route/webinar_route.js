@@ -18,8 +18,8 @@ const upload = multer({ storage })
 
 router.get("/home-webinars", getHomeWebinars);
 router.get("/", authenticateToken, authorizeRole("admin"), findAll);
-router.get("/search", authenticateToken, authorizeRole("admin", "user"), searchWebinar);
-router.get("/filter", authenticateToken, authorizeRole("admin", "user"), filterWebinar);
+router.get("/search", searchWebinar);
+router.get("/filter", filterWebinar);
 router.post("/", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), webinarValidation, save);
 router.get("/:id", findById);
 // router.get("/host/:hostId", authenticateToken, authorizeRole("user", "admin"), findByHostId);
