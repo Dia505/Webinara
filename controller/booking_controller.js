@@ -130,9 +130,28 @@ const findPastBookings = async (req, res) => {
   }
 };
 
+const checkIfBooked = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { webinarId } = req.params;
+
+    if (!webinarId) {
+      return res.status(400).json({ message: "webinarId is required" });
+    }
+
+    const existingBooking = await Booking.findOne({ userId, webinarId });
+
+    res.status(200).json({ alreadyBooked: !!existingBooking });
+  } catch (e) {
+    console.error("Error checking booking:", e);
+    res.status(500).json({ message: "Error checking booking", error: e.message });
+  }
+};
+
 module.exports = {
   findAll,
   save,
   findUpcomingBookings,
-  findPastBookings
+  findPastBookings,
+  checkIfBooked
 }
