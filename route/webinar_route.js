@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { findAll, save, findById, findByHostId, deleteById, update, updateWebinarPhoto, searchWebinar, filterWebinar, getHomeWebinars, checkBookingFull } = require("../controller/webinar_controller.js");
+const { findAll, save, findById, findByHostId, deleteById, update, updateWebinarPhoto, searchWebinar, filterWebinar, getHomeWebinars, checkBookingFull, findUpcomingWebinarsByType } = require("../controller/webinar_controller.js");
 const webinarValidation = require("../validation/webinar_validation.js");
 const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
@@ -20,6 +20,7 @@ router.get("/home-webinars", getHomeWebinars);
 router.get("/", authenticateToken, authorizeRole("admin"), findAll);
 router.get("/search", searchWebinar);
 router.get("/filter", filterWebinar);
+router.get("/webinar-category", findUpcomingWebinarsByType);
 router.post("/", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), webinarValidation, save);
 router.get("/:id", findById);
 // router.get("/host/:hostId", authenticateToken, authorizeRole("user", "admin"), findByHostId);

@@ -282,6 +282,46 @@ const checkBookingFull = async (req, res) => {
     }
 };
 
+const findUpcomingWebinarsByType = async (req, res) => {
+    try {
+        const { category } = req.query;
+        if (!category) {
+            return res.status(400).json({ message: "Missing category query parameter" });
+        }
+
+        const now = new Date();
+        const BASE_URL = "http://localhost:3000"; 
+
+        const webinars = await Webinar.find({
+            category: category,
+            date: { $gte: now }
+        }).populate("hostId");
+
+        const processed = webinars.map(webinar => {
+            const webinarPhotoURL = webinar.webinarPhoto
+                ? `${BASE_URL}/webinar-images/${webinar.webinarPhoto}`
+                : null;
+
+            const profilePictureURL = webinar.hostId?.profilePicture
+                ? `${BASE_URL}/host-images/${webinar.hostId.profilePicture}`
+                : null;
+
+            return {
+                ...webinar._doc,
+                webinarPhoto: webinarPhotoURL,
+                hostId: {
+                    ...webinar.hostId?._doc,
+                    profilePicture: profilePictureURL
+                }
+            };
+        });
+
+        res.status(200).json(processed);
+    } catch (e) {
+        res.status(500).json({ message: "Error fetching upcoming webinars by type", error: e.message });
+    }
+};
+
 module.exports = {
     findAll,
     save,
@@ -293,5 +333,6 @@ module.exports = {
     searchWebinar,
     filterWebinar,
     getHomeWebinars,
-    checkBookingFull
+    checkBookingFull,
+    findUpcomingWebinarsByType
 }
