@@ -40,9 +40,17 @@ const findById = async (req, res) => {
             ? `${BASE_URL}/webinar-images/${webinar.webinarPhoto}`
             : null;
 
+        const hostProfilePictureURL = webinar.hostId?.profilePicture
+            ? `${BASE_URL}/host-images/${webinar.hostId.profilePicture}`
+            : null;
+
         res.status(200).json({
             ...webinar._doc,
-            webinarPhoto: webinarPhotoURL
+            webinarPhoto: webinarPhotoURL,
+            hostId: {
+                ...webinar.hostId._doc,
+                profilePicture: hostProfilePictureURL
+            }
         });
     } catch (e) {
         console.error("Error fetching webinar:", e);
