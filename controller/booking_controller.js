@@ -19,7 +19,7 @@ const save = async (req, res) => {
 
     const userId = req.user.id;
 
-    const webinar = await Webinar.findById(webinarId);
+    const webinar = await Webinar.findById(webinarId).populate("hostId");
     if (!webinar) {
       return res.status(404).json({ message: "Webinar not found" });
     }
@@ -40,6 +40,7 @@ const save = async (req, res) => {
       userId,
       webinarId,
       webinarDetails: {
+        webinarPhoto: webinar.webinarPhoto,
         title: webinar.title,
         level: webinar.level,
         language: webinar.language,
@@ -98,13 +99,38 @@ const findUpcomingBookings = async (req, res) => {
     const upcomingBookings = await Booking.find({ userId })
       .populate({
         path: "webinarId",
-        match: { date: { $gte: now } }
+        match: { date: { $gte: now } },
       })
       .populate("userId");
 
     const filteredBookings = upcomingBookings.filter(pt => pt.webinarId !== null);
 
-    res.status(200).json(filteredBookings);
+    const BASE_URL = "http://localhost:3000";
+
+    const processedBookings = filteredBookings.map(booking => {
+      const webinar = booking.webinarId;
+
+      return {
+        _id: booking._id,
+        userId: booking.userId,
+        webinarId: webinar,
+        webinarDetails: {
+          title: webinar.title,
+          level: webinar.level,
+          language: webinar.language,
+          date: webinar.date,
+          startTime: webinar.startTime,
+          endTime: webinar.endTime,
+          hostFullName: webinar.hostId.fullName,
+          webinarPhoto: webinar.webinarPhoto
+            ? `${BASE_URL}/webinar-images/${webinar.webinarPhoto}`
+            : null,
+        },
+        __v: booking.__v
+      };
+    });
+
+    res.status(200).json(processedBookings);
   } catch (e) {
     res.status(500).json({ message: "Error fetching upcoming bookings", error: e.message });
   }
@@ -124,7 +150,31 @@ const findPastBookings = async (req, res) => {
 
     const filteredBookings = pastBookings.filter(pt => pt.webinarId !== null);
 
-    res.status(200).json(filteredBookings);
+    const BASE_URL = "http://localhost:3000";
+
+    const processedBookings = filteredBookings.map(booking => {
+      const webinar = booking.webinarId;
+
+      return {
+        _id: booking._id,
+        userId: booking.userId,
+        webinarId: webinar,
+        webinarDetails: {
+          title: webinar.title,
+          level: webinar.level,
+          language: webinar.language,
+          date: webinar.date,
+          startTime: webinar.startTime,
+          endTime: webinar.endTime,
+          webinarPhoto: webinar.webinarPhoto
+            ? `${BASE_URL}/webinar-images/${webinar.webinarPhoto}`
+            : null,
+        },
+        __v: booking.__v
+      };
+    });
+
+    res.status(200).json(processedBookings);
   } catch (e) {
     res.status(500).json({ message: "Error fetching past bookings", error: e.message });
   }

@@ -12,6 +12,7 @@ const bookingSchema = new mongoose.Schema({
         required: true
     },
     webinarDetails: {
+        webinarPhoto: String,
         title: String,
         level: String,
         language: String,
