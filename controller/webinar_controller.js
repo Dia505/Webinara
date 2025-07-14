@@ -155,12 +155,13 @@ const searchWebinar = async (req, res) => {
 
         const BASE_URL = "http://localhost:3000";
 
-        const processedWebinars = finalResults.map(w => ({
-            ...w,
-            webinarPhoto: w.webinarPhoto
-                ? `${BASE_URL}/webinar-images/${w.webinarPhoto}`
-                : null
-        }));
+        const processedWebinars = finalResults.map(w => {
+            const obj = w.toObject(); 
+            obj.webinarPhoto = obj.webinarPhoto
+                ? `${BASE_URL}/webinar-images/${obj.webinarPhoto}`
+                : null;
+            return obj;
+        });
 
         res.status(200).json(processedWebinars);
     } catch (e) {
@@ -223,12 +224,13 @@ const filterWebinar = async (req, res) => {
 
         const BASE_URL = "http://localhost:3000";
 
-        const processedWebinars = webinars.map(w => ({
-            ...w,
-            webinarPhoto: w.webinarPhoto
-                ? `${BASE_URL}/webinar-images/${w.webinarPhoto}`
-                : null
-        }));
+        const processedWebinars = webinars.map(w => {
+            const obj = w.toObject(); 
+            obj.webinarPhoto = obj.webinarPhoto
+                ? `${BASE_URL}/webinar-images/${obj.webinarPhoto}`
+                : null;
+            return obj;
+        });
 
         res.status(200).json(processedWebinars);
     } catch (err) {
