@@ -2,13 +2,28 @@ const Webinar = require("../model/webinar");
 
 const findAll = async (req, res) => {
     try {
-        const webinar = await Webinar.find().popualate("hostId");
-        res.status(200).json(webinar);
+        const webinars = await Webinar.find().populate("hostId");
+
+        const BASE_URL = "http://localhost:3000";
+
+        const processedWebinars = webinars.map(w => {
+            const plainWebinar = w.toObject(); // Convert Mongoose doc to plain JS object
+
+            return {
+                ...plainWebinar,
+                webinarPhoto: plainWebinar.webinarPhoto
+                    ? `${BASE_URL}/webinar-images/${plainWebinar.webinarPhoto}`
+                    : null
+            };
+        });
+
+        res.status(200).json(processedWebinars);
     }
     catch (e) {
-        res.json(e)
+        res.status(500).json({ message: "Error fetching webinars", error: e.message });
     }
-}
+};
+
 
 const save = async (req, res) => {
     try {
@@ -57,17 +72,6 @@ const findById = async (req, res) => {
         res.status(500).json({ message: "Server error", error: e.message });
     }
 };
-
-// const findByHostId = async (req, res) => {
-//     try {
-//         const { hostId } = req.params;
-//         const webinar = await Webinar.find({ hostId }).populate("hostId");
-//         res.status(200).json(webinar);
-//     }
-//     catch (e) {
-//         res.json(e)
-//     }
-// }
 
 const deleteById = async (req, res) => {
     try {
@@ -290,7 +294,7 @@ const findUpcomingWebinarsByType = async (req, res) => {
         }
 
         const now = new Date();
-        const BASE_URL = "http://localhost:3000"; 
+        const BASE_URL = "http://localhost:3000";
 
         const webinars = await Webinar.find({
             category: category,
@@ -326,7 +330,6 @@ module.exports = {
     findAll,
     save,
     findById,
-    // findByHostId,
     deleteById,
     update,
     updateWebinarPhoto,
