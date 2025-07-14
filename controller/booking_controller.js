@@ -91,6 +91,42 @@ const save = async (req, res) => {
   }
 };
 
+const findByWebinarId = async (req, res) => {
+  try {
+    const { webinarId } = req.params;
+    const bookings = await Booking.find({ webinarId }).populate("userId");
+
+    const BASE_URL = "http://localhost:3000";
+
+    const processedBookings = bookings.map((booking) => {
+      const user = booking.userId;
+
+      const profilePicURL = user?.profilePicture
+        ? `${BASE_URL}/user-images/${user.profilePicture}`
+        : null;
+
+      return {
+        _id: booking._id,
+        webinarId: booking.webinarId,
+        userId: {
+          _id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          mobileNumber: user.mobileNumber,
+          address: user.address,
+          city: user.city,
+          profilePicture: profilePicURL,
+        },
+      };
+    });
+
+    res.status(200).json(processedBookings);
+  } catch (e) {
+    console.error("Error in findByWebinarId:", e);
+    res.status(500).json({ message: "Error fetching bookings", error: e.message });
+  }
+};
+
 const findUpcomingBookings = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -201,6 +237,7 @@ const checkIfBooked = async (req, res) => {
 module.exports = {
   findAll,
   save,
+  findByWebinarId,
   findUpcomingBookings,
   findPastBookings,
   checkIfBooked
