@@ -4,13 +4,26 @@ const nodemailer = require("nodemailer");
 
 const findAll = async (req, res) => {
     try {
-        const user = await User.find();
-        res.status(200).json(user);
+        const users = await User.find();
+
+        const BASE_URL = "http://localhost:3000";
+
+        const updatedUsers = users.map(user => {
+            const profilePicture = user.profilePicture
+                ? `${BASE_URL}/user-images/${user.profilePicture}`
+                : `${BASE_URL}/user-images/default_profile_img.png`;
+
+            return {
+                ...user._doc,
+                profilePicture,
+            };
+        });
+
+        res.status(200).json(updatedUsers);
+    } catch (e) {
+        res.status(500).json({ error: "Failed to fetch users", details: e });
     }
-    catch (e) {
-        res.json(e)
-    }
-}
+};
 
 const save = async (req, res) => {
     try {
