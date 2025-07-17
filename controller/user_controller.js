@@ -228,6 +228,23 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const findMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const BASE_URL = "https://localhost:443";
+
+        const profilePicture = user.profilePicture
+            ? `${BASE_URL}/user-images/${user.profilePicture}`
+            : `${BASE_URL}/user-images/default_profile_img.png`;
+
+        res.status(200).json({ user: { ...user._doc, profilePicture } });
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 module.exports = {
     findAll,
     save,
@@ -237,5 +254,6 @@ module.exports = {
     updateProfilePicture,
     sendOtp,
     verifyOtp,
-    resetPassword
+    resetPassword,
+    findMe
 }
