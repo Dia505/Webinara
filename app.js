@@ -5,11 +5,18 @@ const app = express();
 const connectDb = require("./config/db");
 const cors = require("cors");
 const path = require("path");
+const https = require("https");
+const fs = require("fs");
 
 connectDb();
 
+const options = {
+  key: fs.readFileSync("./certs/server.key"),
+  cert: fs.readFileSync("./certs/server.crt"),
+};
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: "https://localhost:5173",
   methods: "GET,POST,PUT,DELETE",
   credentials: true,
 }));
@@ -33,9 +40,9 @@ app.use("/user-images", express.static(path.join(__dirname, "user-images")));
 app.use("/host-images", express.static(path.join(__dirname, "host-images")));
 app.use("/webinar-images", express.static(path.join(__dirname, "webinar-images")));
 
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`)
-})
+const PORT = 443; 
+https.createServer(options, app).listen(PORT, () => {
+  console.log(`✅ HTTPS Server running at https://localhost:${PORT}`);
+});
 
 module.exports = { app };
