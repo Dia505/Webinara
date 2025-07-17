@@ -7,6 +7,7 @@ const cors = require("cors");
 const path = require("path");
 const https = require("https");
 const fs = require("fs");
+const cookieParser = require("cookie-parser");
 
 connectDb();
 
@@ -20,7 +21,9 @@ app.use(cors({
   methods: "GET,POST,PUT,DELETE",
   credentials: true,
 }));
+
 app.use(express.json());
+app.use(cookieParser());
 
 const userRouter = require("./route/user_route");
 const adminRouter = require("./route/auth_route");

@@ -50,7 +50,7 @@ const findById = async (req, res) => {
             return res.status(404).json({ message: "Host not found" });
         }
 
-        const BASE_URL = "http://localhost:3000";
+        const BASE_URL = "https://localhost:443";
 
         const profilePicture = host.profilePicture
             ? `${BASE_URL}/host-images/${host.profilePicture}`

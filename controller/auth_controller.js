@@ -35,11 +35,29 @@ const login = async (req, res) => {
         { expiresIn: "1h" }
     );
 
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: true,         // Required for HTTPS
+        sameSite: "strict",   // Prevent CSRF
+        maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    //Token set in a secure HttpOnly cookie
+    //No need to expose token in response body to prevent XSS risk
     res.json({
-        token,
         role: cred.role,
-        userId: cred._id,
+        _id: cred._id,
     });
 };
 
-module.exports = { login, register };
+const logout  = async (req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        path: "/"
+    });
+    res.json({ message: "Logged out" });
+};
+
+module.exports = { login, register, logout };

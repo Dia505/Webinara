@@ -6,7 +6,7 @@ const findAll = async (req, res) => {
     try {
         const users = await User.find();
 
-        const BASE_URL = "http://localhost:3000";
+        const BASE_URL = "https://localhost:443";
 
         const updatedUsers = users.map(user => {
             const profilePicture = user.profilePicture
@@ -63,7 +63,7 @@ const findById = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const BASE_URL = "http://localhost:3000";
+        const BASE_URL = "https://localhost:443";
 
         const profilePicture = user.profilePicture
             ? `${BASE_URL}/user-images/${user.profilePicture}`

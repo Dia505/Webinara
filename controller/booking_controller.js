@@ -96,7 +96,7 @@ const findByWebinarId = async (req, res) => {
     const { webinarId } = req.params;
     const bookings = await Booking.find({ webinarId }).populate("userId");
 
-    const BASE_URL = "http://localhost:3000";
+    const BASE_URL = "https://localhost:443";
 
     const processedBookings = bookings.map((booking) => {
       const user = booking.userId;
@@ -141,7 +141,7 @@ const findUpcomingBookings = async (req, res) => {
 
     const filteredBookings = upcomingBookings.filter(pt => pt.webinarId !== null);
 
-    const BASE_URL = "http://localhost:3000";
+    const BASE_URL = "https://localhost:443";
 
     const processedBookings = filteredBookings.map(booking => {
       const webinar = booking.webinarId;
@@ -186,7 +186,7 @@ const findPastBookings = async (req, res) => {
 
     const filteredBookings = pastBookings.filter(pt => pt.webinarId !== null);
 
-    const BASE_URL = "http://localhost:3000";
+    const BASE_URL = "https://localhost:443";
 
     const processedBookings = filteredBookings.map(booking => {
       const webinar = booking.webinarId;
