@@ -35,13 +35,21 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: "user"
     },
-    otp: { 
-        type: String, 
-        required: false 
+    otp: {
+        type: String,
+        required: false
     },
-    otpExpiresAt: { 
-        type: Date, 
-        required: false 
+    otpExpiresAt: {
+        type: Date,
+        required: false
+    },
+    failedLoginAttempts: {
+        type: Number,
+        default: 0
+    },
+    lockUntil: {
+        type: Date,
+        default: null
     }
 })
 

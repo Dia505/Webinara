@@ -10,9 +10,25 @@ const adminSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    role : {
+    role: {
         type: String,
         default: "admin"
+    },
+    otp: {
+        type: String,
+        required: false
+    },
+    otpExpiresAt: {
+        type: Date,
+        required: false
+    },
+    failedLoginAttempts: {
+        type: Number,
+        default: 0
+    },
+    lockUntil: {
+        type: Date,
+        default: null
     }
 });
 

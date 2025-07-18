@@ -23,11 +23,39 @@ const login = async (req, res) => {
     }
 
     if (!cred) {
-        return res.status(403).send("Incorrect email address");
+        return res.status(403).send({message: "Incorrect email address"});
     }
-    if (!(await bcrypt.compare(password, cred.password))) {
-        return res.status(403).send("Incorrect password");
+
+    const now = new Date();
+
+    // Check if account is locked
+    if (cred.lockUntil && cred.lockUntil > now) {
+        const unlocksIn = Math.ceil((cred.lockUntil - now) / 60000);
+        return res
+            .status(403)
+            .json({
+                message: `Account is locked. Try again in ${unlocksIn} minute(s).`
+            });
     }
+
+    const isPasswordCorrect = await bcrypt.compare(password, cred.password);
+
+    if (!isPasswordCorrect) {
+        cred.failedLoginAttempts = (cred.failedLoginAttempts || 0) + 1;
+
+        if (cred.failedLoginAttempts >= 3) {
+            cred.lockUntil = new Date(now.getTime() + 5 * 60 * 1000); // 5 mins
+            cred.failedLoginAttempts = 0; // reset after locking
+        }
+
+        await cred.save();
+        return res.status(403).json({message: "Incorrect password"});
+    }
+
+    // Successful login: reset failedLoginAttempts and lockUntil
+    cred.failedLoginAttempts = 0;
+    cred.lockUntil = null;
+    await cred.save();
 
     const token = jwt.sign(
         { id: cred._id, role: cred.role },
@@ -37,9 +65,9 @@ const login = async (req, res) => {
 
     res.cookie("token", token, {
         httpOnly: true,
-        secure: true,         // Required for HTTPS
-        sameSite: "strict",   // Prevent CSRF
-        maxAge: 60 * 60 * 1000, // 1 hour
+        secure: true,
+        sameSite: "strict",
+        maxAge: 60 * 60 * 1000,
     });
 
     //Token set in a secure HttpOnly cookie
@@ -50,7 +78,7 @@ const login = async (req, res) => {
     });
 };
 
-const logout  = async (req, res) => {
+const logout = async (req, res) => {
     res.clearCookie("token", {
         httpOnly: true,
         secure: true,
