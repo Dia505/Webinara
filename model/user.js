@@ -50,7 +50,15 @@ const userSchema = new mongoose.Schema({
     lockUntil: {
         type: Date,
         default: null
-    }
+    },
+    passwordHistory: {
+        type: [String], // array of hashed passwords
+        default: [],
+    },
+    passwordChangedAt: {
+        type: Date,
+        default: Date.now,
+    },
 })
 
 const User = mongoose.model("User", userSchema)

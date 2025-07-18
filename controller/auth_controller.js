@@ -23,7 +23,7 @@ const login = async (req, res) => {
     }
 
     if (!cred) {
-        return res.status(403).send({message: "Incorrect email address"});
+        return res.status(403).send({ message: "Incorrect email address" });
     }
 
     const now = new Date();
@@ -49,7 +49,7 @@ const login = async (req, res) => {
         }
 
         await cred.save();
-        return res.status(403).json({message: "Incorrect password"});
+        return res.status(403).json({ message: "Incorrect password" });
     }
 
     // Successful login: reset failedLoginAttempts and lockUntil
@@ -88,4 +88,48 @@ const logout = async (req, res) => {
     res.json({ message: "Logged out" });
 };
 
-module.exports = { login, register, logout };
+const update = async (req, res) => {
+    try {
+        const updateData = { ...req.body };
+        const admin = await Admin.findById(req.params.id);
+
+        if (!admin) {
+            return res.status(404).json({ message: "Admin not found" });
+        }
+
+        // Handle password update
+        if (updateData.password) {
+            const newPassword = updateData.password;
+
+            for (const oldHashed of admin.passwordHistory || []) {
+                const isSame = await bcrypt.compare(newPassword, oldHashed);
+                if (isSame) {
+                    return res.status(400).json({ message: "This password was used recently. Try a different one." });
+                }
+            }
+
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            updateData.password = hashedPassword;
+
+            let history = admin.passwordHistory || [];
+            history.push(hashedPassword);
+            if (history.length > 5) history = history.slice(-5);
+
+            updateData.passwordHistory = history;
+            updateData.passwordChangedAt = new Date();
+        } else {
+            delete updateData.password;
+        }
+
+        const updatedAdmin = await Admin.findByIdAndUpdate(req.params.id, updateData, {
+            new: true,
+        }).select('-password -passwordHistory');
+
+        res.status(200).json(updatedAdmin);
+    } catch (e) {
+        console.error("Failed to update admin:", e);
+        res.status(500).json({ message: "Failed to update admin" });
+    }
+};
+
+module.exports = { login, register, logout, update };

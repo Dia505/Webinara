@@ -29,7 +29,15 @@ const adminSchema = new mongoose.Schema({
     lockUntil: {
         type: Date,
         default: null
-    }
+    },
+    passwordHistory: {
+        type: [String], 
+        default: [],
+    },
+    passwordChangedAt: {
+        type: Date,
+        default: Date.now,
+    },
 });
 
 const Admin = mongoose.model("admin", adminSchema);

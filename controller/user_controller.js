@@ -38,6 +38,8 @@ const save = async (req, res) => {
             city,
             email,
             password: hashedPassword,
+            passwordHistory: [hashedPassword],
+            passwordChangedAt: Date.now(),
             profilePicture: req.file?.originalname || "default_profile_img.png"
         });
 
@@ -94,18 +96,44 @@ const deleteById = async (req, res) => {
 const update = async (req, res) => {
     try {
         const updateData = { ...req.body };
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
 
         if (updateData.password) {
-            updateData.password = await bcrypt.hash(updateData.password, 10);
+            const newPassword = updateData.password;
+
+            // Check if new password matches any previous password
+            for (const oldHashed of user.passwordHistory) {
+                const isSame = await bcrypt.compare(newPassword, oldHashed);
+                if (isSame) {
+                    return res.status(400).json({ message: "This password was used recently. Try a different one." });
+                }
+            }
+
+            // Hash new password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            updateData.password = hashedPassword;
+
+            // Update passwordHistory (keep last 5)
+            let history = user.passwordHistory || [];
+            history.push(hashedPassword);
+            if (history.length > 5) history = history.slice(history.length - 5);
+
+            updateData.passwordHistory = history;
+            updateData.passwordChangedAt = new Date();
         } else {
             delete updateData.password;
         }
 
-        const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-        res.status(200).json(user);
+        res.status(200).json(updatedUser);
     } catch (e) {
-        res.status(500).json(e);
+        console.error(e);
+        res.status(500).json({ message: "Failed to update user" });
     }
 };
 
@@ -129,47 +157,54 @@ const updateProfilePicture = async (req, res) => {
     }
 };
 
+const findAccountByEmail = async (email) => {
+    const user = await User.findOne({ email });
+    if (user) return { account: user, role: 'user' };
+
+    const admin = await Admin.findOne({ email });
+    if (admin) return { account: admin, role: 'admin' };
+
+    return { account: null };
+};
+
 const sendOtp = async (req, res) => {
     try {
         const { email } = req.body;
-        const user = await User.findOne({ email });
 
-        if (!user) return res.status(404).json({ message: "Event explorer not found" });
+        const { account, role } = await findAccountByEmail(email);
+        if (!account) return res.status(404).json({ message: "Account not found" });
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
-
-        user.otp = otp;
-        user.otpExpiresAt = otpExpiresAt;
-        await user.save();
+        account.otp = otp;
+        account.otpExpiresAt = otpExpiresAt;
+        await account.save();
 
         const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
             port: 587,
             secure: false,
-            protocol: "smtp",
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
             }
-        })
+        });
 
         await transporter.sendMail({
             from: '"Webinara Support" <webinara2025@gmail.com>',
-            to: user.email,
+            to: account.email,
             subject: "Reset Your Password",
             html: `
                 <h1>Reset your password</h1>
                 <p>Use the following OTP to reset your password:</p>
                 <h2>${otp}</h2>
-                <p>If you did not request this, please ignore this email.</p>
+                <p>This OTP is valid for 10 minutes. If you did not request this, please ignore.</p>
             `
         });
 
         res.status(200).json({ message: "OTP sent successfully" });
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Error sending OTP:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
@@ -179,19 +214,12 @@ const verifyOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
 
-        const user = await User.findOne({ email });
+        const { account } = await findAccountByEmail(email);
+        if (!account) return res.status(404).json({ message: "Account not found" });
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+        if (account.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
 
-        if (user.otp !== otp) {
-            return res.status(400).json({ message: "Invalid OTP" });
-        }
-
-        if (user.otpExpiresAt < Date.now()) {
-            return res.status(400).json({ message: "OTP has expired" });
-        }
+        if (account.otpExpiresAt < Date.now()) return res.status(400).json({ message: "OTP has expired" });
 
         res.status(200).json({ message: "OTP verified successfully" });
     } catch (error) {
@@ -204,27 +232,39 @@ const resetPassword = async (req, res) => {
     try {
         const { email, newPassword, otp } = req.body;
 
-        const user = await User.findOne({ email });
+        const { account, role } = await findAccountByEmail(email);
+        if (!account) return res.status(404).json({ message: "Account not found" });
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        if (user.otp !== otp || user.otpExpiresAt < Date.now()) {
+        if (account.otp !== otp || account.otpExpiresAt < Date.now()) {
             return res.status(400).json({ message: "Invalid or expired OTP" });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await User.findOneAndUpdate(
-            { email },
-            { password: hashedPassword, otp: null, otpExpiresAt: null },
-            { new: true }
-        );
+        // Check if password was used before
+        if (account.passwordHistory?.some(prev => bcrypt.compareSync(newPassword, prev))) {
+            return res.status(400).json({ message: "You cannot reuse a previous password" });
+        }
+
+        // Update password and history
+        account.password = hashedPassword;
+        account.otp = null;
+        account.otpExpiresAt = null;
+
+        // Initialize passwordHistory if missing
+        if (!account.passwordHistory) account.passwordHistory = [];
+
+        // Add current password to history (before changing it)
+        account.passwordHistory.unshift(hashedPassword);
+
+        // Limit history to last 5 passwords
+        account.passwordHistory = account.passwordHistory.slice(0, 5);
+
+        await account.save();
 
         res.status(200).json({ message: "Password updated successfully" });
     } catch (error) {
-        console.error("Error updating password:", error);
+        console.error("Error resetting password:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
