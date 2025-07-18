@@ -1,4 +1,5 @@
 const User = require("../model/user");
+const Admin = require("../model/admin");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 
@@ -230,7 +231,12 @@ const resetPassword = async (req, res) => {
 
 const findMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select("-password");
+        let user;
+        if (req.user.role === "admin") {
+            user = await Admin.findById(req.user.id).select("-password");
+        } else {
+            user = await User.findById(req.user.id).select("-password");
+        }
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const BASE_URL = "https://localhost:443";

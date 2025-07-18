@@ -136,8 +136,13 @@ const findUpcomingBookings = async (req, res) => {
       .populate({
         path: "webinarId",
         match: { date: { $gte: now } },
+        populate: {
+          path: "hostId", 
+          select: "fullName" 
+        }
       })
       .populate("userId");
+
 
     const filteredBookings = upcomingBookings.filter(pt => pt.webinarId !== null);
 
@@ -180,7 +185,11 @@ const findPastBookings = async (req, res) => {
     const pastBookings = await Booking.find({ userId })
       .populate({
         path: "webinarId",
-        match: { date: { $lt: now } }
+        match: { date: { $lt: now } },
+        populate: {
+          path: "hostId", 
+          select: "fullName" 
+        }
       })
       .populate("userId");
 
