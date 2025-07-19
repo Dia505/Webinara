@@ -4,6 +4,7 @@ const { findAll, save, findById, deleteById, update, updateProfilePicture, findM
 const userValidation = require("../validation/user_validation");
 const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
+const userLogger = require("../middleware/user_logger.js");
 
 const multer = require("multer");
 const storage = multer.diskStorage({
@@ -19,9 +20,9 @@ const upload = multer({ storage })
 router.get("/me", authenticateToken, findMe);
 router.get("/", authenticateToken, authorizeRole("admin"), findAll);
 router.post("/", userValidation, save);
-router.get("/:id", authenticateToken, authorizeRole("user", "admin"), findById);
-router.delete("/:id", authenticateToken, authorizeRole("user"), deleteById);
-router.put("/:id", authenticateToken, authorizeRole("user"), update);
-router.put("/:id/profile-picture", authenticateToken, authorizeRole("user"), upload.single("profilePicture"), updateProfilePicture);
+router.get("/:id", authenticateToken, authorizeRole("user", "admin"), userLogger, findById);
+router.delete("/:id", authenticateToken, authorizeRole("user"), userLogger, deleteById);
+router.put("/:id", authenticateToken, authorizeRole("user"), userLogger, update);
+router.put("/:id/profile-picture", authenticateToken, authorizeRole("user"), upload.single("profilePicture"), userLogger, updateProfilePicture);
 
 module.exports = router;
