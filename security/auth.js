@@ -1,16 +1,23 @@
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.SECRET_KEY;
+const Session = require("../model/session");
 
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
     const token = req.cookies.token;
     if (!token) {
-        return res.status(401).send("Access denied: no token provided")
+        return res.status(401).send("Access denied: no token provided");
     }
 
     try {
-        const verified = jwt.verify(token, SECRET_KEY)
+        const verified = jwt.verify(token, SECRET_KEY);
+
+        const session = await Session.findOne({ token });
+        if (!session || session.expiresAt < new Date()) {
+            return res.status(401).json({ message: "Session expired or invalid" });
+        }
+
         req.user = verified;
-        next()
+        next();
     }
     catch (e) {
         console.error("JWT Verification Error:", e.message);

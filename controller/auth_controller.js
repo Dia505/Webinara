@@ -1,9 +1,11 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.SECRET_KEY;
+const { v4: uuidv4 } = require("uuid");
 
 const Admin = require("../model/admin");
 const User = require("../model/user");
+const Session = require("../model/session");
 
 const register = async (req, res) => {
     const { email, password } = req.body;
@@ -63,6 +65,18 @@ const login = async (req, res) => {
         { expiresIn: "1h" }
     );
 
+    const sessionId = uuidv4();
+
+    // Store session in DB
+    const session = new Session({
+        userId: cred._id,
+        token,
+        sessionId,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+    });
+    await session.save();
+
     res.cookie("token", token, {
         httpOnly: true,
         secure: true,
@@ -79,13 +93,25 @@ const login = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-    res.clearCookie("token", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        path: "/"
-    });
-    res.json({ message: "Logged out" });
+    try {
+        const token = req.cookies.token;
+        if (token) {
+            // Remove the session with this token from DB
+            await Session.findOneAndDelete({ token });
+        }
+
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            path: "/",
+        });
+
+        res.json({ message: "Logged out successfully" });
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({ message: "Internal server error during logout" });
+    }
 };
 
 const update = async (req, res) => {
