@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.SECRET_KEY;
 const { v4: uuidv4 } = require("uuid");
+const nodemailer = require("nodemailer");
 
 const Admin = require("../model/admin");
 const User = require("../model/user");
@@ -101,6 +102,43 @@ const login = async (req, res) => {
                 message: "Password expired. Please change your password.",
                 forcePasswordReset: true,
             });
+        }
+    }
+
+    // Send OTP after successful login of admin
+    if (cred.role === "admin") {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        cred.otp = otp;
+        cred.otpExpiresAt = otpExpiresAt;
+        await cred.save();
+
+        const transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 587,
+            secure: false,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        try {
+            await transporter.sendMail({
+                from: '"Webinara Support" <webinara2025@gmail.com>',
+                to: cred.email,
+                subject: "Login Detected",
+                html: `
+            <h1>Verify Your Admin Login</h1>
+            <p>We've received a login attempt for your admin account.</p>
+            <p>Please confirm your identity using the OTP below:</p>
+            <h2>${otp}</h2>
+            <p>This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+        `
+            });
+        } catch (err) {
+            console.error("Failed to send OTP email:", err);
         }
     }
 
