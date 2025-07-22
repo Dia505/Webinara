@@ -16,8 +16,22 @@ const options = {
   cert: fs.readFileSync("./certs/server.crt"),
 };
 
+const allowedOrigins = [
+  "https://localhost:5173",
+  "https://192.168.221.1:5173",
+  "https://fa03a0569a5a.ngrok-free.app",
+];
+
 app.use(cors({
-  origin: "https://localhost:5173",
+  origin: function (origin, callback) {
+    // console.log("Request Origin:", origin);
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, origin);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: "GET,POST,PUT,DELETE",
   credentials: true,
 }));
@@ -45,8 +59,8 @@ app.use("/user-images", express.static(path.join(__dirname, "user-images")));
 app.use("/host-images", express.static(path.join(__dirname, "host-images")));
 app.use("/webinar-images", express.static(path.join(__dirname, "webinar-images")));
 
-const PORT = 443; 
-https.createServer(options, app).listen(PORT, () => {
+const PORT = 443;
+https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
   console.log(`✅ HTTPS Server running at https://localhost:${PORT}`);
 });
 

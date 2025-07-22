@@ -260,6 +260,8 @@ const resetPassword = async (req, res) => {
         // Limit history to last 5 passwords
         account.passwordHistory = account.passwordHistory.slice(0, 5);
 
+        account.passwordChangedAt = new Date();
+
         await account.save();
 
         res.status(200).json({ message: "Password updated successfully" });

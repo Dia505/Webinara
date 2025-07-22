@@ -77,6 +77,7 @@ const login = async (req, res) => {
     });
     await session.save();
 
+    // Set cookies
     res.cookie("token", token, {
         httpOnly: true,
         secure: true,
@@ -84,11 +85,31 @@ const login = async (req, res) => {
         maxAge: 60 * 60 * 1000,
     });
 
+    // Check if password is too old (e.g. older than 90 days)
+    const MAX_PASSWORD_AGE_DAYS = 90;
+    const msInDay = 1000 * 60 * 60 * 24;
+
+    let forcePasswordReset = false;
+
+    if (cred.passwordChangedAt) {
+        const daysSinceChange = Math.floor(
+            (Date.now() - new Date(cred.passwordChangedAt)) / msInDay
+        );
+
+        if (daysSinceChange >= MAX_PASSWORD_AGE_DAYS) {
+            return res.status(403).json({
+                message: "Password expired. Please change your password.",
+                forcePasswordReset: true,
+            });
+        }
+    }
+
     //Token set in a secure HttpOnly cookie
     //No need to expose token in response body to prevent XSS risk
     res.json({
         role: cred.role,
         _id: cred._id,
+        forcePasswordReset,
     });
 };
 
