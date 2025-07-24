@@ -2,12 +2,11 @@ const User = require("../model/user");
 const Admin = require("../model/admin");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const BASE_URL = process.env.BASE_URL;
 
 const findAll = async (req, res) => {
     try {
         const users = await User.find();
-
-        const BASE_URL = "https://localhost:443";
 
         const updatedUsers = users.map(user => {
             const profilePicture = user.profilePicture
@@ -65,8 +64,6 @@ const findById = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-
-        const BASE_URL = "https://localhost:443";
 
         const profilePicture = user.profilePicture
             ? `${BASE_URL}/user-images/${user.profilePicture}`
@@ -280,8 +277,6 @@ const findMe = async (req, res) => {
             user = await User.findById(req.user.id).select("-password");
         }
         if (!user) return res.status(404).json({ message: "User not found" });
-
-        const BASE_URL = "https://localhost:443";
 
         const profilePicture = user.profilePicture
             ? `${BASE_URL}/user-images/${user.profilePicture}`

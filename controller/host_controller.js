@@ -1,4 +1,5 @@
 const Host = require("../model/host");
+const BASE_URL = process.env.BASE_URL;
 
 const findAll = async (req, res) => {
     try {
@@ -49,8 +50,6 @@ const findById = async (req, res) => {
         if (!host) {
             return res.status(404).json({ message: "Host not found" });
         }
-
-        const BASE_URL = "https://localhost:443";
 
         const profilePicture = host.profilePicture
             ? `${BASE_URL}/host-images/${host.profilePicture}`

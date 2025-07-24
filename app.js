@@ -11,30 +11,27 @@ const cookieParser = require("cookie-parser");
 
 connectDb();
 
-const options = {
-  key: fs.readFileSync("./certs/server.key"),
-  cert: fs.readFileSync("./certs/server.crt"),
-};
-
 const allowedOrigins = [
-  "https://localhost:5173",
-  "https://192.168.221.1:5173",
-  "https://fa03a0569a5a.ngrok-free.app",
+  "https://192.168.18.11:5173",
+  "https://localhost:5173"
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // console.log("Request Origin:", origin);
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, origin);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: "GET,POST,PUT,DELETE",
   credentials: true,
+  methods: "GET,POST,PUT,DELETE",
 }));
+
+const options = {
+  key: fs.readFileSync("./certs/server.key"),
+  cert: fs.readFileSync("./certs/server.crt"),
+};
 
 app.use(express.json());
 app.use(cookieParser());

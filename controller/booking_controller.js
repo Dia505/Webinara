@@ -2,6 +2,7 @@ const Booking = require("../model/booking");
 const User = require("../model/user");
 const Webinar = require("../model/webinar");
 const nodemailer = require("nodemailer");
+const BASE_URL = process.env.BASE_URL;
 
 const findAll = async (req, res) => {
   try {
@@ -96,8 +97,6 @@ const findByWebinarId = async (req, res) => {
     const { webinarId } = req.params;
     const bookings = await Booking.find({ webinarId }).populate("userId");
 
-    const BASE_URL = "https://localhost:443";
-
     const processedBookings = bookings.map((booking) => {
       const user = booking.userId;
 
@@ -146,8 +145,6 @@ const findUpcomingBookings = async (req, res) => {
 
     const filteredBookings = upcomingBookings.filter(pt => pt.webinarId !== null);
 
-    const BASE_URL = "https://localhost:443";
-
     const processedBookings = filteredBookings.map(booking => {
       const webinar = booking.webinarId;
 
@@ -194,8 +191,6 @@ const findPastBookings = async (req, res) => {
       .populate("userId");
 
     const filteredBookings = pastBookings.filter(pt => pt.webinarId !== null);
-
-    const BASE_URL = "https://localhost:443";
 
     const processedBookings = filteredBookings.map(booking => {
       const webinar = booking.webinarId;

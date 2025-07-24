@@ -1,10 +1,10 @@
 const Webinar = require("../model/webinar");
+const BASE_URL = process.env.BASE_URL;
 
 const findAll = async (req, res) => {
     try {
         const webinars = await Webinar.find().populate("hostId");
 
-        const BASE_URL = "https://localhost:443";
 
         const processedWebinars = webinars.map(w => {
             const plainWebinar = w.toObject(); // Convert Mongoose doc to plain JS object
@@ -50,7 +50,6 @@ const findById = async (req, res) => {
             return res.status(404).json({ message: "Webinar not found" });
         }
 
-        const BASE_URL = "https://localhost:443";
         const webinarPhotoURL = webinar.webinarPhoto
             ? `${BASE_URL}/webinar-images/${webinar.webinarPhoto}`
             : null;
@@ -153,7 +152,6 @@ const searchWebinar = async (req, res) => {
 
         const finalResults = [...new Set([...webinars, ...filtered])];
 
-        const BASE_URL = "https://localhost:443";
 
         const processedWebinars = finalResults.map(w => {
             const obj = w.toObject(); 
@@ -222,7 +220,6 @@ const filterWebinar = async (req, res) => {
 
         const webinars = await Webinar.find(filter).sort({ date: 1 });
 
-        const BASE_URL = "https://localhost:443";
 
         const processedWebinars = webinars.map(w => {
             const obj = w.toObject(); 
@@ -248,7 +245,6 @@ const getHomeWebinars = async (req, res) => {
             { $sample: { size: 6 } }
         ]);
 
-        const BASE_URL = "https://localhost:443";
 
         const processedWebinars = webinars.map(w => ({
             ...w,
@@ -296,7 +292,6 @@ const findUpcomingWebinarsByType = async (req, res) => {
         }
 
         const now = new Date();
-        const BASE_URL = "https://localhost:443";
 
         const webinars = await Webinar.find({
             category: category,
