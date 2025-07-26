@@ -8,6 +8,7 @@ const path = require("path");
 const https = require("https");
 const fs = require("fs");
 const cookieParser = require("cookie-parser");
+const csrf = require('csurf');
 
 connectDb();
 
@@ -43,6 +44,7 @@ const webinarRouter = require("./route/webinar_route");
 const bookingRouter = require("./route/booking_route");
 const resetPasswordRouter = require("./route/reset_pwd_route");
 const userLogRouter = require("./route/user_log_route");
+const csrfRouter = require("./route/csrf_route");
 
 app.use("/api/user", userRouter);
 app.use("/api/auth", adminRouter);
@@ -51,6 +53,7 @@ app.use("/api/webinar", webinarRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/reset", resetPasswordRouter);
 app.use("/api/user-log", userLogRouter);
+app.use("/api/csrf-token", csrfRouter);
 
 app.use("/user-images", express.static(path.join(__dirname, "user-images")));
 app.use("/host-images", express.static(path.join(__dirname, "host-images")));

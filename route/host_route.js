@@ -4,6 +4,8 @@ const { findAll, save, findById, deleteById, update, updateProfilePicture } = re
 const hostValidation = require("../validation/host_validation.js");
 const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
+const csrf = require('csurf');
+const csrfProtection = csrf({ cookie: true });
 
 const multer = require("multer");
 const storage = multer.diskStorage({
@@ -17,10 +19,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 router.get("/", authenticateToken, authorizeRole("admin"), findAll);
-router.post("/", authenticateToken, authorizeRole("admin"), upload.single("profilePicture"), hostValidation, save);
+router.post("/", authenticateToken, authorizeRole("admin"), upload.single("profilePicture"), csrfProtection, hostValidation, save);
 router.get("/:id", authenticateToken, authorizeRole("user", "admin"), findById);
-router.delete("/:id", authenticateToken, authorizeRole("admin"), deleteById);
-router.put("/:id", authenticateToken, authorizeRole("admin"), update);
-router.put("/:id/profile-picture", authenticateToken, authorizeRole("admin"), upload.single("profilePicture"), updateProfilePicture);
+router.delete("/:id", authenticateToken, authorizeRole("admin"), csrfProtection, deleteById);
+router.put("/:id", authenticateToken, authorizeRole("admin"), csrfProtection, update);
+router.put("/:id/profile-picture", authenticateToken, authorizeRole("admin"), upload.single("profilePicture"), csrfProtection, updateProfilePicture);
 
 module.exports = router;
