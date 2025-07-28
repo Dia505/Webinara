@@ -1,7 +1,4 @@
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const SECRET_KEY = process.env.SECRET_KEY;
-const { v4: uuidv4 } = require("uuid");
 const nodemailer = require("nodemailer");
 
 const Admin = require("../model/admin");
@@ -60,31 +57,9 @@ const login = async (req, res) => {
     cred.lockUntil = null;
     await cred.save();
 
-    const token = jwt.sign(
-        { id: cred._id, role: cred.role },
-        SECRET_KEY,
-        { expiresIn: "1h" }
-    );
-
-    const sessionId = uuidv4();
-
-    // Store session in DB
-    const session = new Session({
-        userId: cred._id,
-        token,
-        sessionId,
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-    });
-    await session.save();
-
-    // Set cookies
-    res.cookie("token", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 60 * 60 * 1000,
-    });
+    // Store user info in session
+    req.session.userId = cred._id;
+    req.session.role = cred.role;
 
     // Check if password is too old (e.g. older than 90 days)
     const MAX_PASSWORD_AGE_DAYS = 90;
@@ -176,7 +151,7 @@ const logout = async (req, res) => {
 const update = async (req, res) => {
     try {
         const updateData = { ...req.body };
-        const admin = await Admin.findById(req.params.id);
+        const admin = await Admin.findById(req.session.userId);
 
         if (!admin) {
             return res.status(404).json({ message: "Admin not found" });
@@ -206,7 +181,7 @@ const update = async (req, res) => {
             delete updateData.password;
         }
 
-        const updatedAdmin = await Admin.findByIdAndUpdate(req.params.id, updateData, {
+        const updatedAdmin = await Admin.findByIdAndUpdate(req.session.userId, updateData, {
             new: true,
         }).select('-password -passwordHistory');
 

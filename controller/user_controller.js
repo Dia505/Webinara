@@ -59,7 +59,7 @@ const save = async (req, res) => {
 
 const findById = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.session.userId);
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -77,7 +77,7 @@ const findById = async (req, res) => {
 
 const deleteById = async (req, res) => {
     try {
-        const deletedUser = await User.findByIdAndDelete(req.params.id);
+        const deletedUser = await User.findByIdAndDelete(req.session.userId);
 
         if (!deletedUser) {
             return res.status(404).json({ message: "User not found" });
@@ -93,7 +93,7 @@ const deleteById = async (req, res) => {
 const update = async (req, res) => {
     try {
         const updateData = { ...req.body };
-        const user = await User.findById(req.params.id);
+        const user = await User.findById(req.session.userId);
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -125,7 +125,7 @@ const update = async (req, res) => {
             delete updateData.password;
         }
 
-        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(req.session.userId, updateData, { new: true });
 
         res.status(200).json(updatedUser);
     } catch (e) {
@@ -140,7 +140,7 @@ const updateProfilePicture = async (req, res) => {
     }
 
     try {
-        const user = await User.findById(req.params.id);
+        const user = await User.findById(req.session.userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -271,10 +271,10 @@ const resetPassword = async (req, res) => {
 const findMe = async (req, res) => {
     try {
         let user;
-        if (req.user.role === "admin") {
-            user = await Admin.findById(req.user.id).select("-password");
+        if (req.session.role === "admin") {
+            user = await Admin.findById(req.session.userId).select("-password");
         } else {
-            user = await User.findById(req.user.id).select("-password");
+            user = await User.findById(req.session.userId).select("-password");
         }
         if (!user) return res.status(404).json({ message: "User not found" });
 

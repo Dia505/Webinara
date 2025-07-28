@@ -8,7 +8,10 @@ const path = require("path");
 const https = require("https");
 const fs = require("fs");
 const cookieParser = require("cookie-parser");
-const csrf = require('csurf');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+
+require('./scheduled_jobs/webinar_auto_deletion');
 
 connectDb();
 
@@ -37,6 +40,23 @@ const options = {
 app.use(express.json());
 app.use(cookieParser());
 
+// Session middleware setup
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions',
+  }),
+  cookie: {
+    httpOnly: true,
+    secure: true, // set to true if using HTTPS
+    sameSite: 'strict',
+    maxAge: 60 * 60 * 1000, // 1 hour
+  },
+}));
+
 const userRouter = require("./route/user_route");
 const adminRouter = require("./route/auth_route");
 const hostRouter = require("./route/host_route");
@@ -58,6 +78,17 @@ app.use("/api/csrf-token", csrfRouter);
 app.use("/user-images", express.static(path.join(__dirname, "user-images")));
 app.use("/host-images", express.static(path.join(__dirname, "host-images")));
 app.use("/webinar-images", express.static(path.join(__dirname, "webinar-images")));
+
+// CSRF error handler
+app.use((err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({
+      message: 'Invalid CSRF token',
+      error: 'CSRF token validation failed'
+    });
+  }
+  next(err);
+});
 
 const PORT = 443;
 https.createServer(options, app).listen(PORT, '0.0.0.0', () => {

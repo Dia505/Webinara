@@ -18,7 +18,7 @@ const save = async (req, res) => {
   try {
     const { webinarId } = req.body;
 
-    const userId = req.user.id;
+    const userId = req.session.userId;
 
     const webinar = await Webinar.findById(webinarId).populate("hostId");
     if (!webinar) {
@@ -128,7 +128,7 @@ const findByWebinarId = async (req, res) => {
 
 const findUpcomingBookings = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.session.userId;
     const now = new Date();
 
     const upcomingBookings = await Booking.find({ userId })
@@ -136,8 +136,8 @@ const findUpcomingBookings = async (req, res) => {
         path: "webinarId",
         match: { date: { $gte: now } },
         populate: {
-          path: "hostId", 
-          select: "fullName" 
+          path: "hostId",
+          select: "fullName"
         }
       })
       .populate("userId");
@@ -176,7 +176,7 @@ const findUpcomingBookings = async (req, res) => {
 
 const findPastBookings = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.session.userId;
     const now = new Date();
 
     const pastBookings = await Booking.find({ userId })
@@ -184,8 +184,8 @@ const findPastBookings = async (req, res) => {
         path: "webinarId",
         match: { date: { $lt: now } },
         populate: {
-          path: "hostId", 
-          select: "fullName" 
+          path: "hostId",
+          select: "fullName"
         }
       })
       .populate("userId");
@@ -222,7 +222,7 @@ const findPastBookings = async (req, res) => {
 
 const checkIfBooked = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.session.userId;
     const { webinarId } = req.params;
 
     if (!webinarId) {

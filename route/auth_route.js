@@ -6,7 +6,7 @@ const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
 const userLogger = require("../middleware/user_logger.js");
 const csrf = require('csurf');
-const csrfProtection = csrf({ cookie: true });
+const csrfProtection = csrf();
 
 router.post("/login", userLogger, login);
 router.post("/register", authenticateToken, authorizeRole("admin"), csrfProtection, adminValidation, register);

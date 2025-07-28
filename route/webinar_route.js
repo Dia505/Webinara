@@ -5,7 +5,7 @@ const webinarValidation = require("../validation/webinar_validation.js");
 const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
 const csrf = require('csurf');
-const csrfProtection = csrf({ cookie: true });
+const csrfProtection = csrf();
 
 const multer = require("multer");
 const storage = multer.diskStorage({

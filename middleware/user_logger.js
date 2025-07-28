@@ -2,8 +2,8 @@ const UserLog = require("../model/user_log");
 
 const userLogger = async (req, res, next) => {
   try {
-    if (req.user?.id) {
-      const userId = req.user.id.toString();
+    if (req.session?.userId) {
+      const userId = req.session.userId.toString();
       const method = req.method;
       const url = req.originalUrl;
       const timestamp = new Date().toISOString();
