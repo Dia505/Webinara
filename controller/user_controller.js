@@ -2,6 +2,7 @@ const User = require("../model/user");
 const Admin = require("../model/admin");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const validator = require('validator');
 const BASE_URL = process.env.BASE_URL;
 
 const findAll = async (req, res) => {
@@ -27,7 +28,16 @@ const findAll = async (req, res) => {
 
 const save = async (req, res) => {
     try {
-        const { fullName, mobileNumber, address, city, email, password } = req.body;
+        const sanitizedData = {
+            fullName: validator.escape(req.body.fullName || ''),
+            mobileNumber: validator.trim(req.body.mobileNumber || ''),
+            address: validator.escape(req.body.address || ''),
+            city: validator.escape(req.body.city || ''),
+            email: validator.normalizeEmail(req.body.email || ''),
+            password: req.body.password || ''
+        };
+
+        const { fullName, mobileNumber, address, city, email, password } = sanitizedData;
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = new User({
@@ -92,7 +102,17 @@ const deleteById = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const updateData = { ...req.body };
+        // Sanitize input data
+        const sanitizedData = {
+            fullName: validator.escape(req.body.fullName || ''),
+            mobileNumber: validator.trim(req.body.mobileNumber || ''),
+            address: validator.escape(req.body.address || ''),
+            city: validator.escape(req.body.city || ''),
+            email: req.body.email ? validator.normalizeEmail(req.body.email) : undefined,
+            password: req.body.password || undefined
+        };
+
+        const updateData = { ...sanitizedData };
         const user = await User.findById(req.session.userId);
 
         if (!user) {

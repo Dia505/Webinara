@@ -1,12 +1,24 @@
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const validator = require('validator');
 
 const Admin = require("../model/admin");
 const User = require("../model/user");
-const Session = require("../model/session");
 
 const register = async (req, res) => {
-    const { email, password } = req.body;
+    // Sanitize input data
+    const sanitizedData = {
+        email: validator.normalizeEmail(req.body.email || ''),
+        password: req.body.password || ''
+    };
+
+    const { email, password } = sanitizedData;
+
+    // Validate email
+    if (!validator.isEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const cred = new Admin({ email, password: hashedPassword });
@@ -15,7 +27,18 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-    const { email, password } = req.body;
+    // Sanitize input data
+    const sanitizedData = {
+        email: validator.normalizeEmail(req.body.email || ''),
+        password: req.body.password || ''
+    };
+
+    const { email, password } = sanitizedData;
+
+    // Validate email
+    if (!validator.isEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+    }
 
     let cred = await Admin.findOne({ email });
     if (!cred) {
@@ -58,7 +81,7 @@ const login = async (req, res) => {
     await cred.save();
 
     // Store user info in session
-    req.session.userId = cred._id;
+    req.session.userId = cred._id.toString();
     req.session.role = cred.role;
 
     // Check if password is too old (e.g. older than 90 days)
@@ -128,20 +151,23 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        const token = req.cookies.token;
-        if (token) {
-            // Remove the session with this token from DB
-            await Session.findOneAndDelete({ token });
-        }
+        // Destroy the session using express-session
+        req.session.destroy((err) => {
+            if (err) {
+                console.error("Logout error:", err);
+                return res.status(500).json({ message: "Internal server error during logout" });
+            }
 
-        res.clearCookie("token", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
-            path: "/",
+            // Clear the session cookie
+            res.clearCookie("connect.sid", {
+                httpOnly: true,
+                secure: true,
+                sameSite: "strict",
+                path: "/",
+            });
+
+            res.json({ message: "Logged out successfully" });
         });
-
-        res.json({ message: "Logged out successfully" });
     } catch (error) {
         console.error("Logout error:", error);
         res.status(500).json({ message: "Internal server error during logout" });

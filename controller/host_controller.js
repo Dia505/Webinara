@@ -1,30 +1,54 @@
 const Host = require("../model/host");
 const BASE_URL = process.env.BASE_URL;
+const validator = require('validator');
 
 const findAll = async (req, res) => {
     try {
-        const host = await Host.find();
-        res.status(200).json(host);
+        const hosts = await Host.find();
+
+        const updatedHosts = hosts.map(host => {
+            const profilePicture = host.profilePicture
+                ? `${BASE_URL}/host-images/${host.profilePicture}`
+                : `${BASE_URL}/host-images/default_profile_img.png`;
+
+            return {
+                ...host._doc,
+                profilePicture,
+            };
+        });
+
+        res.status(200).json(updatedHosts);
+    } catch (e) {
+        res.status(500).json({ error: "Failed to fetch hosts", details: e });
     }
-    catch (e) {
-        res.json(e)
-    }
-}
+};
 
 const save = async (req, res) => {
     try {
-        const { fullName, bio, email, expertise, socialMediaLinks = [] } = req.body;
+        // Sanitize input data
+        const sanitizedData = {
+            fullName: validator.escape(req.body.fullName || ''),
+            bio: validator.escape(req.body.bio || ''),
+            email: validator.normalizeEmail(req.body.email || ''),
+            expertise: req.body.expertise || [],
+            socialMediaLinks: req.body.socialMediaLinks || []
+        };
 
-        const existing = await Host.findOne({ email });
-        if (existing) {
-            return res.status(409).json({ message: "Host with this email already exists" });
+        const { fullName, bio, email, expertise, socialMediaLinks } = sanitizedData;
+
+        // Validate email
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({ message: "Invalid email format" });
         }
+
+        // Sanitize expertise array
+        const sanitizedExpertise = expertise.map(e => validator.trim(validator.escape(e)));
 
         const host = new Host({
             fullName,
             bio,
             email,
-            expertise: expertise.map(e => e.trim()),
+            expertise: sanitizedExpertise,
             socialMediaLinks,
             profilePicture: req.file?.originalname || "default_profile_img.png"
         });
@@ -78,7 +102,23 @@ const deleteById = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const host = await Host.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        // Sanitize input data
+        const sanitizedData = {
+            fullName: validator.escape(req.body.fullName || ''),
+            bio: validator.escape(req.body.bio || ''),
+            email: req.body.email ? validator.normalizeEmail(req.body.email) : undefined,
+            expertise: req.body.expertise ? req.body.expertise.map(e => validator.trim(validator.escape(e))) : undefined,
+            socialMediaLinks: req.body.socialMediaLinks || undefined
+        };
+
+        // Remove undefined values
+        Object.keys(sanitizedData).forEach(key => {
+            if (sanitizedData[key] === undefined) {
+                delete sanitizedData[key];
+            }
+        });
+
+        const host = await Host.findByIdAndUpdate(req.params.id, sanitizedData, { new: true });
         res.status(201).json(host);
     }
     catch (e) {

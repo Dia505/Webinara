@@ -1,5 +1,6 @@
 const Webinar = require("../model/webinar");
 const BASE_URL = process.env.BASE_URL;
+const validator = require('validator');
 
 const findAll = async (req, res) => {
     try {
@@ -27,8 +28,23 @@ const findAll = async (req, res) => {
 
 const save = async (req, res) => {
     try {
+        // Sanitize input data
+        const sanitizedData = {
+            title: validator.escape(req.body.title || ''),
+            subtitle: validator.escape(req.body.subtitle || ''),
+            category: validator.escape(req.body.category || ''),
+            level: validator.escape(req.body.level || ''),
+            language: validator.escape(req.body.language || ''),
+            date: req.body.date || '',
+            startTime: req.body.startTime || '',
+            endTime: req.body.endTime || '',
+            totalSeats: req.body.totalSeats || null,
+            hostId: req.body.hostId || '',
+            webinarPhoto: req.file ? req.file.filename : undefined,
+        };
+
         const webinarData = {
-            ...(req.body.value || req.body),
+            ...(sanitizedData.value || sanitizedData),
             webinarPhoto: req.file ? req.file.filename : undefined,
         };
 
@@ -89,7 +105,28 @@ const deleteById = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const webinar = await Webinar.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        // Sanitize input data
+        const sanitizedData = {
+            title: req.body.title ? validator.escape(req.body.title) : undefined,
+            subtitle: req.body.subtitle ? validator.escape(req.body.subtitle) : undefined,
+            category: req.body.category ? validator.escape(req.body.category) : undefined,
+            level: req.body.level ? validator.escape(req.body.level) : undefined,
+            language: req.body.language ? validator.escape(req.body.language) : undefined,
+            date: req.body.date || undefined,
+            startTime: req.body.startTime || undefined,
+            endTime: req.body.endTime || undefined,
+            totalSeats: req.body.totalSeats || undefined,
+            hostId: req.body.hostId || undefined
+        };
+
+        // Remove undefined values
+        Object.keys(sanitizedData).forEach(key => {
+            if (sanitizedData[key] === undefined) {
+                delete sanitizedData[key];
+            }
+        });
+
+        const webinar = await Webinar.findByIdAndUpdate(req.params.id, sanitizedData, { new: true });
         res.status(201).json(webinar);
     }
     catch (e) {
@@ -154,7 +191,7 @@ const searchWebinar = async (req, res) => {
 
 
         const processedWebinars = finalResults.map(w => {
-            const obj = w.toObject(); 
+            const obj = w.toObject();
             obj.webinarPhoto = obj.webinarPhoto
                 ? `${BASE_URL}/webinar-images/${obj.webinarPhoto}`
                 : null;
@@ -222,7 +259,7 @@ const filterWebinar = async (req, res) => {
 
 
         const processedWebinars = webinars.map(w => {
-            const obj = w.toObject(); 
+            const obj = w.toObject();
             obj.webinarPhoto = obj.webinarPhoto
                 ? `${BASE_URL}/webinar-images/${obj.webinarPhoto}`
                 : null;
