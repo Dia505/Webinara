@@ -206,6 +206,7 @@ const findPastBookings = async (req, res) => {
           date: webinar.date,
           startTime: webinar.startTime,
           endTime: webinar.endTime,
+          hostFullName: webinar.hostId.fullName,
           webinarPhoto: webinar.webinarPhoto
             ? `${BASE_URL}/webinar-images/${webinar.webinarPhoto}`
             : null,

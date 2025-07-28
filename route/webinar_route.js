@@ -4,8 +4,7 @@ const { findAll, save, findById, deleteById, update, updateWebinarPhoto, searchW
 const webinarValidation = require("../validation/webinar_validation.js");
 const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
-const csrf = require('csurf');
-const csrfProtection = csrf();
+const csrfValidation = require("../validation/csrf_validation.js");
 
 const multer = require("multer");
 const storage = multer.diskStorage({
@@ -23,11 +22,11 @@ router.get("/home-webinars", getHomeWebinars);
 router.get("/search", searchWebinar);
 router.get("/filter", filterWebinar);
 router.get("/webinar-category", findUpcomingWebinarsByType);
-router.post("/", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), csrfProtection, webinarValidation, save);
+router.post("/", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), csrfValidation, webinarValidation, save);
 router.get("/:id", findById);
-router.delete("/:id", authenticateToken, authorizeRole("admin"), csrfProtection, deleteById);
-router.put("/:id", authenticateToken, authorizeRole("admin"), csrfProtection, update);
-router.put("/:id/webinar-image", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), csrfProtection, updateWebinarPhoto);
+router.delete("/:id", authenticateToken, authorizeRole("admin"), csrfValidation, deleteById);
+router.put("/:id", authenticateToken, authorizeRole("admin"), csrfValidation, update);
+router.put("/:id/webinar-image", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), csrfValidation, updateWebinarPhoto);
 router.get("/check-full-booking/:id", checkBookingFull);
 
 module.exports = router;
