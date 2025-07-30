@@ -9,12 +9,17 @@ const csrfValidation = require("../validation/csrf_validation.js");
 const uploadErrorHandler = require("../middleware/upload_error_handler.js");
 
 const multer = require("multer");
+const { v4: uuidv4 } = require('uuid');
+const path = require("path");
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "user-images")
     },
     filename: function (req, file, cb) {
-        cb(null, file.originalname)
+        const ext = path.extname(file.originalname);
+        const uniqueName = uuidv4() + ext;
+        cb(null, uniqueName);
     }
 })
 

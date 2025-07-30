@@ -8,18 +8,23 @@ const csrfValidation = require("../validation/csrf_validation.js");
 const uploadErrorHandler = require("../middleware/upload_error_handler.js");
 
 const multer = require("multer");
+const { v4: uuidv4 } = require('uuid');
+const path = require("path");
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "webinar-images")
     },
     filename: function (req, file, cb) {
-        cb(null, file.originalname)
+        const ext = path.extname(file.originalname);
+        const uniqueName = uuidv4() + ext;
+        cb(null, uniqueName);
     }
 })
 
 // File filter to only allow image files
 const fileFilter = (req, file, cb) => {
-    // Check file extension first (more secure)
+    // Check file extension first =
     const allowedExtensions = ['.jpg', '.jpeg', '.png'];
     const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
 

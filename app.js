@@ -11,6 +11,7 @@ const cookieParser = require("cookie-parser");
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const multer = require('multer');
+const helmet = require('helmet');
 
 require('./scheduled_jobs/webinar_auto_deletion');
 
@@ -21,6 +22,25 @@ const allowedOrigins = [
   "https://localhost:5173",
   "https://10.1.6.202:5173"
 ];
+
+// Helmet middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -77,9 +97,24 @@ app.use("/api/reset", resetPasswordRouter);
 app.use("/api/user-log", userLogRouter);
 app.use("/api/csrf-token", csrfRouter);
 
-app.use("/user-images", express.static(path.join(__dirname, "user-images")));
-app.use("/host-images", express.static(path.join(__dirname, "host-images")));
-app.use("/webinar-images", express.static(path.join(__dirname, "webinar-images")));
+// Serve static images with CORS headers
+app.use("/user-images", (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, "user-images")));
+
+app.use("/host-images", (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, "host-images")));
+
+app.use("/webinar-images", (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, "webinar-images")));
 
 // CSRF error handler
 app.use((err, req, res, next) => {
