@@ -5,9 +5,10 @@ const { authenticateToken } = require("../security/auth")
 const { authorizeRole } = require("../security/auth");
 const userLogger = require("../middleware/user_logger.js");
 const csrfValidation = require("../validation/csrf_validation.js");
+const { rateLimiter } = require("../middleware/rate_limiter.js");
 
 router.get("/", authenticateToken, authorizeRole("admin"), findAll);
-router.post("/", authenticateToken, authorizeRole("user"), csrfValidation, userLogger, save);
+router.post("/", authenticateToken, authorizeRole("user"), csrfValidation, userLogger, rateLimiter(3, 60000), save);
 router.get("/upcoming", authenticateToken, authorizeRole("user"), userLogger, findUpcomingBookings);
 router.get("/past", authenticateToken, authorizeRole("user"), userLogger, findPastBookings);
 router.get("/webinar/:webinarId", authenticateToken, authorizeRole("admin"), findByWebinarId);

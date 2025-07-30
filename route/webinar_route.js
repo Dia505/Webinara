@@ -6,6 +6,7 @@ const { authenticateToken } = require("../security/auth.js")
 const { authorizeRole } = require("../security/auth.js");
 const csrfValidation = require("../validation/csrf_validation.js");
 const uploadErrorHandler = require("../middleware/upload_error_handler.js");
+const { validateFileContent } = require("../middleware/file_content_validation.js");
 
 const multer = require("multer");
 const { v4: uuidv4 } = require('uuid');
@@ -53,11 +54,11 @@ router.get("/home-webinars", getHomeWebinars);
 router.get("/search", searchWebinar);
 router.get("/filter", filterWebinar);
 router.get("/webinar-category", findUpcomingWebinarsByType);
-router.post("/", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), uploadErrorHandler, csrfValidation, webinarValidation, save);
+router.post("/", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), uploadErrorHandler, validateFileContent, csrfValidation, webinarValidation, save);
 router.get("/:id", findById);
 router.delete("/:id", authenticateToken, authorizeRole("admin"), csrfValidation, deleteById);
 router.put("/:id", authenticateToken, authorizeRole("admin"), csrfValidation, update);
-router.put("/:id/webinar-image", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), uploadErrorHandler, csrfValidation, updateWebinarPhoto);
+router.put("/:id/webinar-image", authenticateToken, authorizeRole("admin"), upload.single("webinarPhoto"), uploadErrorHandler, validateFileContent, csrfValidation, updateWebinarPhoto);
 router.get("/check-full-booking/:id", checkBookingFull);
 
 module.exports = router;

@@ -2,6 +2,7 @@ const Booking = require("../model/booking");
 const User = require("../model/user");
 const Webinar = require("../model/webinar");
 const nodemailer = require("nodemailer");
+const mongoose = require("mongoose");
 const BASE_URL = process.env.BASE_URL;
 
 const findAll = async (req, res) => {
@@ -15,27 +16,47 @@ const findAll = async (req, res) => {
 }
 
 const save = async (req, res) => {
+  // Start database transaction for race condition protection
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { webinarId } = req.body;
-
     const userId = req.session.userId;
 
-    const webinar = await Webinar.findById(webinarId).populate("hostId");
+    // Get webinar with session for transaction
+    const webinar = await Webinar.findById(webinarId).populate("hostId").session(session);
     if (!webinar) {
+      await session.abortTransaction();
       return res.status(404).json({ message: "Webinar not found" });
     }
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).session(session);
     if (!user) {
+      await session.abortTransaction();
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Check if user already booked this webinar (within transaction)
+    const existingBooking = await Booking.findOne({
+      userId,
+      webinarId
+    }).session(session);
+
+    if (existingBooking) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "You have already booked this webinar" });
+    }
+
+    // Check seat availability WITHIN transaction
     if (webinar.totalSeats !== null && webinar.bookedSeats >= webinar.totalSeats) {
+      await session.abortTransaction();
       return res.status(400).json({ message: "No seats available" });
     }
 
+    // Update webinar seats atomically
     webinar.bookedSeats = (webinar.bookedSeats || 0) + 1;
-    await webinar.save();
+    await webinar.save({ session });
 
     const booking = new Booking({
       userId,
@@ -48,12 +69,14 @@ const save = async (req, res) => {
         date: webinar.date,
         startTime: webinar.startTime,
         endTime: webinar.endTime,
-        webinarPhoto: webinar.webinarPhoto,
         hostFullName: webinar.hostId.fullName
       },
     });
 
-    await booking.save();
+    await booking.save({ session });
+
+    // Commit transaction
+    await session.commitTransaction();
 
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -86,9 +109,26 @@ const save = async (req, res) => {
             `
     });
 
-    res.status(201).json(booking);
+    res.status(201).json({
+      ...booking.toObject(),
+      message: "Booking successful! Check your email for confirmation."
+    });
   } catch (e) {
+    // Abort transaction on error
+    await session.abortTransaction();
+    console.error('Booking error:', e);
+
+    if (e.code === 11000) {
+      return res.status(409).json({
+        message: "Booking conflict. Please try again.",
+        error: "DUPLICATE_BOOKING"
+      });
+    }
+
     res.status(500).json({ message: "Error booking seats", error: e.message });
+  } finally {
+    // Always end the session
+    session.endSession();
   }
 };
 

@@ -62,22 +62,13 @@ const options = {
 app.use(express.json());
 app.use(cookieParser());
 
-// Session middleware setup
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
-    collectionName: 'sessions',
-  }),
-  cookie: {
-    httpOnly: true,
-    secure: true, // set to true if using HTTPS
-    sameSite: 'strict',
-    maxAge: 60 * 60 * 1000, // 1 hour
-  },
-}));
+const { enhancedSessionConfig, sessionProtection } = require('./middleware/session_protection');
+
+// Enhanced session middleware setup
+app.use(session(enhancedSessionConfig));
+
+// Apply session protection to all routes
+app.use(sessionProtection);
 
 const userRouter = require("./route/user_route");
 const adminRouter = require("./route/auth_route");

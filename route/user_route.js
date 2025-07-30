@@ -7,6 +7,7 @@ const { authorizeRole } = require("../security/auth.js");
 const userLogger = require("../middleware/user_logger.js");
 const csrfValidation = require("../validation/csrf_validation.js");
 const uploadErrorHandler = require("../middleware/upload_error_handler.js");
+const { validateFileContent } = require("../middleware/file_content_validation.js");
 
 const multer = require("multer");
 const { v4: uuidv4 } = require('uuid');
@@ -55,6 +56,6 @@ router.post("/", userValidation, save);
 router.get("/:id", authenticateToken, authorizeRole("user", "admin"), userLogger, findById);
 router.delete("/:id", authenticateToken, authorizeRole("user"), csrfValidation, userLogger, deleteById);
 router.put("/:id", authenticateToken, authorizeRole("user"), csrfValidation, userLogger, update);
-router.put("/:id/profile-picture", authenticateToken, authorizeRole("user"), upload.single("profilePicture"), uploadErrorHandler, csrfValidation, userLogger, updateProfilePicture);
+router.put("/:id/profile-picture", authenticateToken, authorizeRole("user"), upload.single("profilePicture"), uploadErrorHandler, validateFileContent, csrfValidation, userLogger, updateProfilePicture);
 
 module.exports = router;
