@@ -160,14 +160,23 @@ const searchWebinar = async (req, res) => {
         return res.status(400).json({ message: "Missing search query" });
     }
 
-    const keywords = query.trim().toLowerCase().split(/\s+/);
+    // Sanitize and escape the query to prevent NoSQL injection
+    const sanitizedQuery = validator.escape(query.trim());
+
+    // Escape regex special characters to prevent injection
+    const escapeRegex = (string) => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
+    const keywords = sanitizedQuery.toLowerCase().split(/\s+/);
     const orFilters = [];
 
     keywords.forEach(word => {
+        const escapedWord = escapeRegex(word);
         orFilters.push(
-            { title: { $regex: word, $options: "i" } },
-            { category: { $regex: word, $options: "i" } },
-            { level: { $regex: word, $options: "i" } }
+            { title: { $regex: escapedWord, $options: "i" } },
+            { category: { $regex: escapedWord, $options: "i" } },
+            { level: { $regex: escapedWord, $options: "i" } }
             // Handle host.fullName below using populate + filter
         );
     });
@@ -182,13 +191,12 @@ const searchWebinar = async (req, res) => {
             .populate("hostId", "fullName") // only get host's fullName
             .exec();
 
-        // Further filter webinars where host name matches the query
+        // Further filter webinars where host name matches the query (also sanitized)
         const filtered = webinars.filter(w =>
-            w.hostId?.fullName?.toLowerCase().includes(query.toLowerCase())
+            w.hostId?.fullName?.toLowerCase().includes(sanitizedQuery.toLowerCase())
         );
 
         const finalResults = [...new Set([...webinars, ...filtered])];
-
 
         const processedWebinars = finalResults.map(w => {
             const obj = w.toObject();
@@ -199,9 +207,9 @@ const searchWebinar = async (req, res) => {
         });
 
         res.status(200).json(processedWebinars);
-    } catch (e) {
-        console.error("Search failed:", e);
-        res.status(500).json({ message: "Search failed", error: e.message });
+    } catch (error) {
+        console.error("Search error:", error);
+        res.status(500).json({ message: "Error searching webinars", error: error.message });
     }
 };
 
@@ -209,54 +217,74 @@ const filterWebinar = async (req, res) => {
     try {
         const { category, level, language, dateRange } = req.query;
 
+        // Check for MongoDB operators in query parameter keys (e.g., category[$ne], level[$regex])
+        const queryKeys = Object.keys(req.query);
+        for (const key of queryKeys) {
+            if (key.includes('[') && key.includes(']')) {
+                return res.status(400).json({
+                    message: "Invalid filter parameter",
+                    error: "Filter parameter names cannot contain special operators"
+                });
+            }
+        }
+
         const filter = {};
 
-        if (category) filter.category = category;
-        if (level) filter.level = level;
-        if (language) filter.language = language;
+        // Helper function to sanitize and validate filter parameters
+        const sanitizeFilterParam = (value) => {
+            if (!value) return null;
+
+            // Check if value is an object (indicates MongoDB operator injection)
+            if (typeof value === 'object' || Array.isArray(value)) {
+                return null;
+            }
+
+            const sanitized = validator.escape(String(value).trim());
+            return sanitized && sanitized.length > 0 ? sanitized : null;
+        };
+
+        // Sanitize filter parameters
+        const sanitizedCategory = sanitizeFilterParam(category, 'category');
+        const sanitizedLevel = sanitizeFilterParam(level, 'level');
+        const sanitizedLanguage = sanitizeFilterParam(language, 'language');
+
+        if (sanitizedCategory) filter.category = sanitizedCategory;
+        if (sanitizedLevel) filter.level = sanitizedLevel;
+        if (sanitizedLanguage) filter.language = sanitizedLanguage;
 
         const now = new Date();
 
-        // Handle relative date filters using just the `date` field
+        // Always ensure we only get upcoming webinars (past webinars should never show)
+        let dateFilter = { $gte: now };
+
+        // Handle relative date filters
         if (dateRange === "today") {
             const startOfDay = new Date(now.setHours(0, 0, 0, 0));
             const endOfDay = new Date(now.setHours(23, 59, 59, 999));
-            filter.date = { $gte: startOfDay, $lte: endOfDay };
+            dateFilter = { $gte: startOfDay, $lte: endOfDay };
         }
-
         else if (dateRange === "this-week") {
+            const endOfWeek = new Date(now);
             const day = now.getDay(); // Sunday = 0
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - day);
-            startOfWeek.setHours(0, 0, 0, 0);
-
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setDate(now.getDate() + (6 - day)); // End of current week
             endOfWeek.setHours(23, 59, 59, 999);
-
-            filter.date = { $gte: startOfWeek, $lte: endOfWeek };
+            dateFilter = { $gte: now, $lte: endOfWeek };
         }
-
         else if (dateRange === "next-7-days") {
             const sevenDaysLater = new Date(now);
             sevenDaysLater.setDate(now.getDate() + 7);
-            filter.date = { $gte: now, $lte: sevenDaysLater };
+            dateFilter = { $gte: now, $lte: sevenDaysLater };
         }
-
         else if (dateRange === "this-month") {
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
             const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             endOfMonth.setHours(23, 59, 59, 999);
-            filter.date = { $gte: startOfMonth, $lte: endOfMonth };
+            dateFilter = { $gte: now, $lte: endOfMonth };
         }
 
-        else {
-            // default to upcoming only
-            filter.date = { $gte: new Date() };
-        }
+        // Apply the date filter (always ensures upcoming webinars only)
+        filter.date = dateFilter;
 
         const webinars = await Webinar.find(filter).sort({ date: 1 });
-
 
         const processedWebinars = webinars.map(w => {
             const obj = w.toObject();

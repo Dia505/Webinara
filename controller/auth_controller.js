@@ -5,6 +5,13 @@ const validator = require('validator');
 const Admin = require("../model/admin");
 const User = require("../model/user");
 
+const joi = require("joi");
+
+const loginSchema = joi.object({
+    email: joi.string().email().required(),
+    password: joi.string().required()
+});
+
 const register = async (req, res) => {
     // Sanitize input data
     const sanitizedData = {
@@ -27,6 +34,12 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
+    // Validate input type to block objects and malformed data
+    const { error, value } = loginSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({ message: "Invalid login data" });
+    }
+
     // Sanitize input data
     const sanitizedData = {
         email: validator.normalizeEmail(req.body.email || ''),
@@ -66,7 +79,7 @@ const login = async (req, res) => {
     if (!isPasswordCorrect) {
         cred.failedLoginAttempts = (cred.failedLoginAttempts || 0) + 1;
 
-        if (cred.failedLoginAttempts >= 3) {
+        if (cred.failedLoginAttempts >= 10) {
             cred.lockUntil = new Date(now.getTime() + 5 * 60 * 1000); // 5 mins
             cred.failedLoginAttempts = 0; // reset after locking
         }

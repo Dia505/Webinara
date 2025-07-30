@@ -17,7 +17,8 @@ connectDb();
 
 const allowedOrigins = [
   "https://192.168.18.11:5173",
-  "https://localhost:5173"
+  "https://localhost:5173",
+  "https://10.1.6.202:5173"
 ];
 
 app.use(cors({
