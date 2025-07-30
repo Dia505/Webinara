@@ -87,6 +87,11 @@ const findById = async (req, res) => {
 
 const deleteById = async (req, res) => {
     try {
+        // Validate ObjectId format
+        if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+            return res.status(404).json({ message: "Host not found" });
+        }
+
         const deletedHost = await Host.findByIdAndDelete(req.params.id);
 
         if (!deletedHost) {

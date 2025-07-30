@@ -10,6 +10,7 @@ const fs = require("fs");
 const cookieParser = require("cookie-parser");
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const multer = require('multer');
 
 require('./scheduled_jobs/webinar_auto_deletion');
 
@@ -88,6 +89,32 @@ app.use((err, req, res, next) => {
       error: 'CSRF token validation failed'
     });
   }
+  next(err);
+});
+
+// Multer error handler
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        message: 'File too large',
+        error: 'File size must be less than 5MB'
+      });
+    }
+    return res.status(400).json({
+      message: 'File upload error',
+      error: err.message
+    });
+  }
+
+  // Handle custom file type errors
+  if (err.message && err.message.includes('Only JPEG, JPG and PNG files are allowed')) {
+    return res.status(400).json({
+      message: 'Invalid file type',
+      error: 'Only JPEG, JPG and PNG files are allowed'
+    });
+  }
+
   next(err);
 });
 

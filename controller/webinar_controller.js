@@ -60,6 +60,10 @@ const save = async (req, res) => {
 
 const findById = async (req, res) => {
     try {
+        if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+            return res.status(404).json({ message: "Webinar not found" });
+        }
+
         const webinar = await Webinar.findById(req.params.id).populate("hostId");
 
         if (!webinar) {
@@ -90,6 +94,11 @@ const findById = async (req, res) => {
 
 const deleteById = async (req, res) => {
     try {
+        // Validate ObjectId format
+        if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+            return res.status(404).json({ message: "Webinar not found" });
+        }
+
         const deletedWebinar = await Webinar.findByIdAndDelete(req.params.id);
 
         if (!deletedWebinar) {
@@ -105,6 +114,11 @@ const deleteById = async (req, res) => {
 
 const update = async (req, res) => {
     try {
+        // Validate ObjectId format
+        if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+            return res.status(404).json({ message: "Webinar not found" });
+        }
+
         // Sanitize input data
         const sanitizedData = {
             title: req.body.title ? validator.escape(req.body.title) : undefined,
@@ -140,6 +154,11 @@ const updateWebinarPhoto = async (req, res) => {
     }
 
     try {
+        // Validate ObjectId format
+        if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+            return res.status(404).json({ message: "Webinar not found" });
+        }
+
         const webinar = await Webinar.findById(req.params.id);
         if (!webinar) {
             return res.status(404).json({ message: "webinar not found" });
@@ -326,6 +345,11 @@ const getHomeWebinars = async (req, res) => {
 
 const checkBookingFull = async (req, res) => {
     try {
+        // Validate ObjectId format
+        if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+            return res.status(404).json({ message: "Webinar not found" });
+        }
+
         const webinar = await Webinar.findById(req.params.id);
 
         if (!webinar) {
