@@ -172,7 +172,7 @@ const logout = async (req, res) => {
             }
 
             // Clear the session cookie
-            res.clearCookie("connect.sid", {
+            res.clearCookie("webinara_session", {
                 httpOnly: true,
                 secure: true,
                 sameSite: "strict",

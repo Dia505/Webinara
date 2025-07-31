@@ -8,7 +8,8 @@ const csrfValidation = require("../validation/csrf_validation.js");
 const { rateLimiter } = require("../middleware/rate_limiter.js");
 
 router.get("/", authenticateToken, authorizeRole("admin"), findAll);
-router.post("/", authenticateToken, authorizeRole("user"), csrfValidation, userLogger, rateLimiter(3, 60000), save);
+router.post("/", authenticateToken, authorizeRole("user"), csrfValidation, userLogger, 
+    rateLimiter(5, 600000, (req) => `${req.session.userId}-${req.body.webinarId}`), save);
 router.get("/upcoming", authenticateToken, authorizeRole("user"), userLogger, findUpcomingBookings);
 router.get("/past", authenticateToken, authorizeRole("user"), userLogger, findPastBookings);
 router.get("/webinar/:webinarId", authenticateToken, authorizeRole("admin"), findByWebinarId);

@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const connectMongo = require('connect-mongo');
 
 // Generate simple fingerprint for session
 const generateFingerprint = (req) => {
@@ -46,8 +47,8 @@ const sessionProtection = (req, res, next) => {
             reasons.push('FINGERPRINT_MISMATCH');
         }
 
-        // Session timeout (30 minutes)
-        const sessionTimeout = 30 * 60 * 1000; // 30 minutes
+        // Session timeout (1 hour)
+        const sessionTimeout = 60 * 60 * 1000; 
         if (req.session.lastActivity && (Date.now() - req.session.lastActivity) > sessionTimeout) {
             suspicious = true;
             reasons.push('SESSION_TIMEOUT');
@@ -78,7 +79,6 @@ const sessionProtection = (req, res, next) => {
 
     } catch (error) {
         console.error('Session protection error:', error);
-        // Don't block the request on middleware error
         next();
     }
 };
@@ -88,20 +88,20 @@ const enhancedSessionConfig = {
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: require('connect-mongo').create({
+    store: connectMongo.create({
         mongoUrl: process.env.MONGO_URI,
         collectionName: 'sessions',
-        ttl: 30 * 60, // 30 minutes
+        ttl: 60 * 60, // 1 hour
         autoRemove: 'native'
     }),
     cookie: {
         httpOnly: true,
         secure: true, // Only send over HTTPS
         sameSite: 'strict',
-        maxAge: 30 * 60 * 1000, // 30 minutes
+        maxAge: 60 * 60 * 1000, // 1 hour
         path: '/'
     },
-    name: 'webinara_session', // Don't use default 'connect.sid'
+    name: 'webinara_session',
     rolling: true, // Extend session on activity
     unset: 'destroy' // Remove session from store when destroyed
 };
