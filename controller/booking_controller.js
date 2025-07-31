@@ -16,47 +16,43 @@ const findAll = async (req, res) => {
 }
 
 const save = async (req, res) => {
-  // Start database transaction for race condition protection
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { webinarId } = req.body;
     const userId = req.session.userId;
 
-    // Get webinar with session for transaction
-    const webinar = await Webinar.findById(webinarId).populate("hostId").session(session);
-    if (!webinar) {
-      await session.abortTransaction();
-      return res.status(404).json({ message: "Webinar not found" });
-    }
-
-    const user = await User.findById(userId).session(session);
-    if (!user) {
-      await session.abortTransaction();
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Check if user already booked this webinar (within transaction)
-    const existingBooking = await Booking.findOne({
-      userId,
-      webinarId
-    }).session(session);
-
+    // Check if user already booked this webinar
+    const existingBooking = await Booking.findOne({ userId, webinarId });
     if (existingBooking) {
-      await session.abortTransaction();
       return res.status(400).json({ message: "You have already booked this webinar" });
     }
 
-    // Check seat availability WITHIN transaction
-    if (webinar.totalSeats !== null && webinar.bookedSeats >= webinar.totalSeats) {
-      await session.abortTransaction();
-      return res.status(400).json({ message: "No seats available" });
+    // Use optimistic locking with findOneAndUpdate for race condition protection
+    const webinar = await Webinar.findByIdAndUpdate(
+      webinarId,
+      { $inc: { bookedSeats: 1 } },
+      {
+        new: true,
+        runValidators: true,
+        // Only update if seats are available (when totalSeats is not null)
+        $expr: {
+          $or: [
+            { $eq: ["$totalSeats", null] },
+            { $lt: ["$bookedSeats", "$totalSeats"] }
+          ]
+        }
+      }
+    ).populate("hostId");
+
+    if (!webinar) {
+      return res.status(404).json({ message: "Webinar not found or no seats available" });
     }
 
-    // Update webinar seats atomically
-    webinar.bookedSeats = (webinar.bookedSeats || 0) + 1;
-    await webinar.save({ session });
+    const user = await User.findById(userId);
+    if (!user) {
+      // Rollback the seat increment if user not found
+      await Webinar.findByIdAndUpdate(webinarId, { $inc: { bookedSeats: -1 } });
+      return res.status(404).json({ message: "User not found" });
+    }
 
     const booking = new Booking({
       userId,
@@ -73,10 +69,7 @@ const save = async (req, res) => {
       },
     });
 
-    await booking.save({ session });
-
-    // Commit transaction
-    await session.commitTransaction();
+    await booking.save();
 
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -114,9 +107,14 @@ const save = async (req, res) => {
       message: "Booking successful! Check your email for confirmation."
     });
   } catch (e) {
-    // Abort transaction on error
-    await session.abortTransaction();
     console.error('Booking error:', e);
+
+    // Rollback seat increment on error
+    try {
+      await Webinar.findByIdAndUpdate(webinarId, { $inc: { bookedSeats: -1 } });
+    } catch (rollbackError) {
+      console.error('Error rolling back seat increment:', rollbackError);
+    }
 
     if (e.code === 11000) {
       return res.status(409).json({
@@ -126,9 +124,6 @@ const save = async (req, res) => {
     }
 
     res.status(500).json({ message: "Error booking seats", error: e.message });
-  } finally {
-    // Always end the session
-    session.endSession();
   }
 };
 

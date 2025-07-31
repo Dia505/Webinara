@@ -2,7 +2,7 @@ const rateLimiter = (maxAttempts = 5, windowMs = 60000, keyGenerator) => {
   const attempts = new Map();
 
   return (req, res, next) => {
-    const key = keyGenerator(req);
+    const key = keyGenerator ? keyGenerator(req) : req.ip;
     if (!key) return res.status(400).json({ message: "Invalid request for rate limiting" });
 
     const now = Date.now();
@@ -24,3 +24,5 @@ const rateLimiter = (maxAttempts = 5, windowMs = 60000, keyGenerator) => {
     next();
   };
 };
+
+module.exports = { rateLimiter };
