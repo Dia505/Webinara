@@ -175,8 +175,6 @@ const findUpcomingBookings = async (req, res) => {
           select: "fullName"
         }
       })
-      .populate("userId");
-
 
     const filteredBookings = upcomingBookings.filter(pt => pt.webinarId !== null);
 
@@ -222,8 +220,7 @@ const findPastBookings = async (req, res) => {
           path: "hostId",
           select: "fullName"
         }
-      })
-      .populate("userId");
+      });
 
     const filteredBookings = pastBookings.filter(pt => pt.webinarId !== null);
 
