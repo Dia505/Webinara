@@ -2,7 +2,7 @@ const cron = require("node-cron");
 const Webinar = require("../model/webinar");
 const Host = require("../model/host");
 
-cron.schedule("0 0 * * *", async () => {
+cron.schedule("0 * * * *", async () => {
   try {
     const now = new Date();
 
